@@ -122,6 +122,11 @@ parser.add_argument(
         " translations"
     ),
 )
+parser.add_argument(
+    "--both",
+    action="store_true",
+    help="Include both the original title and the romanized one",
+)
 args = parser.parse_args()
 
 if CACHE_FILE.exists():
@@ -219,8 +224,18 @@ with args.path_to_music_db.open(encoding="cp932") as input_file:
             translated_title = translations.get(title, title)
             for old, new in SPECIAL_CHARS_TRANSLATION_TABLE.items():
                 translated_title = translated_title.replace(new, old)
+
+            # This ensures translated title get properly escaped back to their
+            # original form, even if they were partially escaped
             translated_title = translated_title.replace("&amp;", "&")
+            translated_title = translated_title.replace("&lt;", "<")
+            translated_title = translated_title.replace("&gt;", ">")
             translated_title = translated_title.replace("&", "&amp;")
+            translated_title = translated_title.replace("<", "&lt;")
+            translated_title = translated_title.replace(">", "&gt;")
+
+            if args.both and translated_title != title:
+                translated_title = f"{title} / {translated_title}"
             translated_line = line[:start] + translated_title + line[end:]
             try:
                 output_file.write(translated_line)
